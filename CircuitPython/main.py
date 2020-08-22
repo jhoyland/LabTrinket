@@ -48,6 +48,7 @@ def sendValue(v):
 # When we start up, make the LED black
 black = (0, 0, 0)
 curColor = black
+targetColor = black
 led_mode = "off"
 adc_mode = "raw"
 
