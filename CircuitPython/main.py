@@ -1,11 +1,7 @@
 # LabTrinket
 # Allows control of the ADC, PWM and on board LED function of the Trinket M0 over serial using simple text commands.
+
 # LED code based on ATMaker's Handup.
-
-
-# ATMakers HandUp
-# Listens to the USB Serial port and responds to incoming strings
-# Sets appropriate colors on the DotStar LED
 
 # This program uses the board package to access the Trinket's pin names
 # and uses adafruit_dotstar to talk to the LED
@@ -16,16 +12,44 @@ import board
 import adafruit_dotstar
 import supervisor
 from analogio import AnalogIn
+from analogio import AnalogOut
 
-# create an object for the dotstar pixel on the Trinket M0
-# It's an array because it's a sequence of one pixel
-pixels = adafruit_dotstar.DotStar(board.APA102_SCK, board.APA102_MOSI, 1, brightness=.95)
+# define pins
 
 adc_pin = AnalogIn(board.D0)
+dac_pin = AnalogOut(board.A0)
+
+# setup initial state
+
+# ADC
+
 adc_running = False
 adc_delay = 1.0
+adc_mode = "raw"
+
+# DAC
+
+dac_running = False
+dac_level = 30000
+dac_pin.value = 0
+
+# LED
+
+pixels = adafruit_dotstar.DotStar(board.APA102_SCK, board.APA102_MOSI, 1, brightness=.95)
+black = (0, 0, 0)
+curColor = black
+targetColor = black
+led_mode = "off"
+pixels.fill(black)
+pixels.show()
+
+# Timer
+
+lastime = thistime = time.monotonic()
+
 # this function takes a standard "hex code" for a color and returns
 # a tuple of (red, green, blue)
+
 def hex2rgb(hex_code):
     red = int("0x"+hex_code[0:2], 16)
     green = int("0x"+hex_code[2:4], 16)
@@ -44,36 +68,21 @@ def sendValue(v):
     else:
         print(">i%d" % v)				# Send raw ADC value
 
-
-# When we start up, make the LED black
-black = (0, 0, 0)
-curColor = black
-targetColor = black
-led_mode = "off"
-adc_mode = "raw"
-
-# Initialize the timer
-lastime = thistime = time.monotonic()
-
-# We start by turning off pixels
-pixels.fill(black)
-pixels.show()
-
-
-
 # Main Loop
 while True:
     # Check to see if there's input available (requires CP 4.0 Alpha)
     if supervisor.runtime.serial_bytes_available:
-        # read in text (@mode, #RRGGBB, %brightness, standard color)
         # input() will block until a newline is sent
         # input() echoes the received line back to the sender. This is a pain.
         inText = input().strip()
         # Sometimes Windows sends an extra (or missing) newline - ignore them
         if inText == "":
             continue
+
         # Process the input text - start with the presets (no #,@,etc)
         # We use startswith to not have to worry about CR vs CR+LF differences
+
+        # LED commands
 
         elif inText.startswith("led"):
 
@@ -92,6 +101,8 @@ while True:
                 targetColor= (50,0,0)
                 led_mode = 'blink'
  
+
+        # ADC commands
 
         elif inText.startswith("adc"):
 
@@ -117,6 +128,36 @@ while True:
                 # Set the ADC mode (volts or raw)
                 elif command[0] == "mode":
                     adc_mode = command[1]
+
+        # DAC commands
+
+        elif inText.startswith("dac"):
+
+            optTex = inText[3:]
+
+            if optTex.startswith("@"):
+                command = optTex[1:].split('=',1)
+
+                if command[0] == "on":
+                    dac_running = True
+                    dac_pin.value = dac_level
+
+                elif command[0] == "off":
+                    dac_running = False
+                    dac_pin.value = 0
+
+                elif command[0] == "level":
+                    v = int(command[1])
+                    if v > 65535:
+                        v = 65535
+                    if v < 0:
+                        v = 0
+
+                    dac_level = v
+                    if dac_running:
+                        dac_pin.value = dac_level
+
+
 
         else:
             targetColor =(0, 0, 50)

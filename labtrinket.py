@@ -3,6 +3,14 @@
 Created on Sun Jul 19 17:51:22 2020
 
 @author: James Hoyland
+
+LabTrinket:
+    
+This class encapsulates serial communications with the Trinket M0 running the lab trinket python code.
+
+Through this interface you can set LED color and brightness, get ADC values and control the PWM and true analog output on the board.
+
+
 """
 
 
@@ -18,6 +26,10 @@ class LabTrinket:
     cmdADCNow = "adc!\r"
     cmdADCRun = "adc@run\r"
     cmdADCStop = "adc@stop\r"
+    
+    cmdDACOn = "dac@on\r"
+    cmdDACOff = "dac@off\r"
+    cmdDACLevel ="dac@level={:}\r"
     
     cmdLEDcolor = "led#{:02X}{:02X}{:02X}\r"
     cmdLEDbright = "led%{:}\r"
@@ -71,7 +83,7 @@ class LabTrinket:
         if self.volts:
             self.connection.write((LabTrinket.cmdADCVolts.format("volts")).encode())
         else:
-            self.connection.write((LabTrinket.cmdADCVolts.fromat("raw")).encode())
+            self.connection.write((LabTrinket.cmdADCVolts.format("raw")).encode())
             
     def adcRun(self):
         self.adcWriteOptions()
@@ -89,11 +101,32 @@ class LabTrinket:
         if self.volts:
             self.connection.write((LabTrinket.cmdADCVolts.format("volts")).encode())
         else:
-            self.connection.write((LabTrinket.cmdADCVolts.fromat("raw")).encode())
+            self.connection.write((LabTrinket.cmdADCVolts.format("raw")).encode())
             
     def adcDelay(self,delay=1):
         self.dly = delay
-        self.connection.write((LabTrinket.cmdADCDelay.format(self.dly)).encode())     
+        self.connection.write((LabTrinket.cmdADCDelay.format(self.dly)).encode())   
+        
+        
+    def dacOn(self):
+        self.connection.write(LabTrinket.cmdDACOn.encode())
+        
+    def dacOff(self):
+        self.connection.write(LabTrinket.cmdDACOff.encode())
+        
+    def dacLevel(self,level):
+        self.connection.write((LabTrinket.cmdDACLevel.format(level)).encode())
+        
+    def dacVolts(self,volts):
+        if volts > 3.3:
+            volts = 3.3
+        if volts < 0:
+            volts = 0
+            
+        level = int(65536 * volts / 3.3)
+        
+        self.dacLevel(level)
+        
     
     #Set RGB values for NeoStar LED, ignores values which are out of range
     
