@@ -47,15 +47,22 @@ class LabTrinket:
         self.brightness = 100
      
     
-    #grabs an ADC value. Note, unless adcWriteOptions is called first the ADC settings will be as currently set on the board
+    #requests a single ADC value. This does not return the actual value
+
+    #Note: unless adcWriteOptions is called first the ADC settings will be as currently set on the board
     #not necessarily the values stored in the LabTrinket instance. If the Trinket has been set into free running mode
     #using adcRun then this has already been done
         
     def adcRequestValue(self):
         self.connection.write(LabTrinket.cmdADCNow.encode())
+
+    #Checks to see if the trinket has sent any values
         
     def adcValueReady(self):
         return self.connection.in_waiting > 0
+
+    #Gets the actual value. Will try a set number of times to retrieve a value from the serial buffer. Returns true if a 
+    #value was successfully retrieved. The retrieved value is placed in the instance variable 'value'
     
     # CircuitPython's "input" method echoes the serial sent to the board. 
     # So we have to strip out these echoes from the response
@@ -76,6 +83,8 @@ class LabTrinket:
             tries = tries - 1
                     
         return success
+
+    # Writes the current ADC options to the trinket
     
     def adcWriteOptions(self):
         
@@ -85,16 +94,20 @@ class LabTrinket:
         else:
             self.connection.write((LabTrinket.cmdADCVolts.format("raw")).encode())
             
+    # Sets the ADC into free running mode. The trinket will send ADC values at the interval determined by self.dly
+
     def adcRun(self):
         self.adcWriteOptions()
         self.connection.write(LabTrinket.cmdADCRun.encode())
         self.connection.reset_input_buffer()
+
+    # Stop ADC
         
     def adcStop(self):
         self.connection.write(LabTrinket.cmdADCStop.encode())
         
-    """adcVoltMode: Sets the Trinket ADC to "volt" mode. In this case ADC values are converted to actual voltages and 
-    sent as a floating point number. Otherwise the ADC returns the raw ADC integer (12-bit value)  """
+    #adcVoltMode: Sets the Trinket ADC to "volt" mode. In this case ADC values are converted to actual voltages and 
+    #sent as a floating point number. Otherwise the ADC returns the raw ADC integer (12-bit value) 
     
     def adcVoltMode(self,mode=True):
         self.volts = mode
@@ -102,21 +115,30 @@ class LabTrinket:
             self.connection.write((LabTrinket.cmdADCVolts.format("volts")).encode())
         else:
             self.connection.write((LabTrinket.cmdADCVolts.format("raw")).encode())
+
+    # Set the delay for ADC measurements
             
     def adcDelay(self,delay=1):
         self.dly = delay
         self.connection.write((LabTrinket.cmdADCDelay.format(self.dly)).encode())   
         
+    # Turn on the DAC
         
     def dacOn(self):
         self.connection.write(LabTrinket.cmdDACOn.encode())
+
+    # Turn off the DAC
         
     def dacOff(self):
         self.connection.write(LabTrinket.cmdDACOff.encode())
+
+    # Set the DAC level. Does not turn the DAC on if it is off. Does not check for valid level right now so be careful!
         
     def dacLevel(self,level):
         self.connection.write((LabTrinket.cmdDACLevel.format(level)).encode())
         
+    # Set the DAC voltage. 
+
     def dacVolts(self,volts):
         if volts > 3.3:
             volts = 3.3
@@ -128,7 +150,8 @@ class LabTrinket:
         self.dacLevel(level)
         
     
-    #Set RGB values for NeoStar LED, ignores values which are out of range
+    #Set RGB values for NeoStar LED, ignores values which are out of range. Only changes
+    #The values requested, e.g. can change red without changing other values.
     
     def ledSetColor(self,red=-1, green = -1, blue = -1, writeToTrinket = True):
         if red >= 0 and red < 256:
@@ -141,6 +164,8 @@ class LabTrinket:
         if writeToTrinket:
             self.connection.write((LabTrinket.cmdLEDcolor.format(self.red,self.green,self.blue)).encode())
         
+    #Set brightness. Sets overall brightness.
+
     def ledSetBrightness(self, brightness = -1, writeToTrinket = True):
         
         if brightness >= 0 and brightness <= 100:
@@ -148,14 +173,20 @@ class LabTrinket:
         
         if writeToTrinket:
             self.connection.write((LabTrinket.cmdLEDbright.format(self.brightness)).encode())
+
+    # Turns on the LED with the last saved color
         
     def ledOn(self):
         self.ledSetBrightness()
         self.ledSetColor()
         
+    # Turns off the LED
+
     def ledOff(self):
         self.connection.write(LabTrinket.cmdLEDoff.encode())
     
+
+# Use case example
     
 if __name__ == "__main__":
 
