@@ -21,23 +21,25 @@ class LabTrinket:
     
     #Command strings for Trinket M0
     
-    cmdADCDelay = "adc@delay={:.4f}\r"
-    cmdADCVolts = "adc@mode={}\r"
-    cmdADCNow = "adc!\r"
-    cmdADCRun = "adc@run\r"
-    cmdADCStop = "adc@stop\r"
+    cmdADCDelay     = "adc@delay={:.4f}\r"
+    cmdADCVolts     = "adc@mode={}\r"
+    cmdADCNow       = "adc!\r"
+    cmdADCRun       = "adc@run\r"
+    cmdADCStop      = "adc@stop\r"
     
-    cmdDACOn = "dac@on\r"
-    cmdDACOff = "dac@off\r"
-    cmdDACLevel ="dac@level={:}\r"
+    cmdDACOn        = "dac@on\r"
+    cmdDACOff       = "dac@off\r"
+    cmdDACLevel     = "dac@level={:}\r"
     
-    cmdLEDcolor = "led#{:02X}{:02X}{:02X}\r"
-    cmdLEDbright = "led%{:}\r"
-    cmdLEDoff = "led%0\r"
+    cmdLEDcolor     = "led#{:02X}{:02X}{:02X}\r"
+    cmdLEDbright    = "led%{:}\r"
+    cmdLEDoff       = "led%0\r"
+    
+    maxVolts = 3.3
     
     def __init__(self,connection):
         self.connection = connection
-        self.value = 0
+        self.value = 0 #stores latest value from the ADC
         self.dly = 1 #delay in seconds between ADC measurements when free running
         self.volts = False  #by default 
         #Some default settings for LED so ledOn does something if used right away
@@ -140,12 +142,12 @@ class LabTrinket:
     # Set the DAC voltage. 
 
     def dacVolts(self,volts):
-        if volts > 3.3:
-            volts = 3.3
+        if volts > LabTrinket.maxVolts:
+            volts = LabTrinket.maxVolts
         if volts < 0:
             volts = 0
             
-        level = int(65536 * volts / 3.3)
+        level = int(65536 * volts / LabTrinket.maxVolts)
         
         self.dacLevel(level)
         
@@ -189,18 +191,26 @@ class LabTrinket:
 # Use case example
     
 if __name__ == "__main__":
+    
+    # Setup serial connection
 
     serconn = serial.Serial()
     serconn.port = 'COM17'
     serconn.baudrate = 9600
     serconn.open()
     
+    # Create LabTrinet object
+    
     trinket = LabTrinket(serconn)
     
     i = 0
     
+    # Set ADC to volt mode with 0.5s delay
+    
     trinket.volts = True
     trinket.delay = 0.5
+    
+    # Set onboard LED color and brightness
     
     trinket.red = 250
     trinket.green = 12
@@ -210,7 +220,11 @@ if __name__ == "__main__":
     
     trinket.ledOn()
     
+    # Put ADC into free-running mode
+    
     trinket.adcRun()
+    
+    # Get 50 ADC values while modifying the LED color
     
     while i<50:
         if trinket.adcGetValue():
@@ -222,6 +236,8 @@ if __name__ == "__main__":
     
     
     print("Done")
+    
+    # Clean up and close the connection
     
     trinket.adcStop()
     

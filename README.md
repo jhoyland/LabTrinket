@@ -1,4 +1,5 @@
 # LabTrinket
+
 A system for using a Trinket M0 as a simple lab instrument interface for take-home experiments
 
 The LabTrinket is based on the Trinket M0 microcontroller from Adafruit. It is designed to use the Tinket as a low cost component for take-home science labs allowing data gathering and some control of experiments. The Trinket is run connected to a host computer and responds to simple serial commands over USB. There are two parts. 
