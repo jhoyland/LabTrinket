@@ -124,6 +124,25 @@ class LabTrinket:
         self.dly = delay
         self.connection.write((LabTrinket.cmdADCDelay.format(self.dly)).encode())   
         
+    def adcAveragedValue(self,n):
+        
+        accumulated = 0
+        
+        self.adcRun()
+        
+        i = 0
+        
+        while i<n:
+            
+            if self.adcGetValue():
+                
+                accumulated += self.value
+                i = i + 1
+            
+        self.adcStop()
+            
+        return accumulated / n
+        
     # Turn on the DAC
         
     def dacOn(self):
